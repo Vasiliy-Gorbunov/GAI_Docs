@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="1" author="Vasiliy-Gorbunov">
+        <createTable tableName="license">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="date" type="date"/>
+            <column name="owner_id" type="bigint"/>
+        </createTable>
+        <createTable tableName="license_categories">
+            <column name="license_id" type="bigint">
+                <constraints primaryKey="true" foreignKeyName="fk_license" references="license(id)"/>
+            </column>
+            <column name="category" type="varchar(255)">
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="Vasiliy-Gorbunov">
+        <createTable tableName="passport">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="car_id" type="bigint"/>
+            <column name="date" type="date"/>
+        </createTable>
+        <createTable tableName="passport_owners_id">
+            <column name="passport_id" type="bigint">
+                <constraints primaryKey="true" foreignKeyName="fk_passport" references="passport(id)"/>
+            </column>
+            <column name="owner_id" type="bigint">
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
