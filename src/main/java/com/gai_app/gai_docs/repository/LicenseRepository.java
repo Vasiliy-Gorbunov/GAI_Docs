@@ -14,4 +14,6 @@ public interface LicenseRepository {
     License save(License License);
 
     void deleteById(Long id);
+
+    Optional<License> findByOwnerId(Long ownerId);
 }

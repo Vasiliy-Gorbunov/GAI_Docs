@@ -36,6 +36,12 @@ public class LicenseControllerImpl implements LicenseController {
         return mappingUtils.mapToLicenseDto(licenseService.getLicenseById(id));
     }
 
+
+    @GetMapping("/ownerid/{id}")
+    public LicenseDto getLicenseByOwnerId(@PathVariable Long id) {
+        return mappingUtils.mapToLicenseDto(licenseService.getLicenseByOwnerId(id));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LicenseDto createLicense(@Valid @RequestBody LicenseDto licenseDto) {

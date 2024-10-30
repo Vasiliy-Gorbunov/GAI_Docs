@@ -15,8 +15,6 @@ public class Passport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    private String uid;
-
     private Long carId;
 
     @ElementCollection

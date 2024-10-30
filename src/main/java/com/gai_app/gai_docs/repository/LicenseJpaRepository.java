@@ -16,4 +16,6 @@ public interface LicenseJpaRepository extends LicenseRepository, JpaRepository<L
     License save(License License);
 
     void deleteById(Long id);
+
+    Optional<License> findByOwnerId(Long id);
 }

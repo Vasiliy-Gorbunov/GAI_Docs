@@ -24,33 +24,37 @@ public class LicenseServiceImpl implements LicenseService {
         this.mappingUtils = mappingUtils;
     }
 
-    @Override
+
     @Transactional(readOnly = true)
     public List<LicenseModel> getAllLicenses() {
         return licenseRepository.findAll().stream().map(mappingUtils::mapToLicenseModelFromEntity).collect(Collectors.toList());
     }
 
 
-    @Override
+
     @Transactional(readOnly = true)
     public LicenseModel getLicenseById(Long id) {
         return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.findById(id)
-                .orElseThrow(() -> ThrowableMessage(id)));
+                .orElseThrow(() -> ThrowableMessage("", id)));
     }
 
-
     @Override
+    public LicenseModel getLicenseByOwnerId(Long id) {
+        return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.findByOwnerId(id)
+                .orElseThrow(() -> ThrowableMessage("owner ", id)));
+    }
+
     @Transactional
     public LicenseModel createLicense(LicenseModel licenseModel) {
         return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.save(mappingUtils.mapToLicense(licenseModel)));
     }
 
 
-    @Override
+
     @Transactional
     public LicenseModel updateLicense(Long id, LicenseModel updatedLicense) {
         License existingLicense = licenseRepository.findById(id)
-                .orElseThrow(() -> ThrowableMessage(id));
+                .orElseThrow(() -> ThrowableMessage("", id));
 
         License updatingLicense = mappingUtils.mapToLicense(updatedLicense);
 
@@ -62,16 +66,15 @@ public class LicenseServiceImpl implements LicenseService {
     }
 
 
-    @Override
     @Transactional
     public void deleteLicense(Long id) {
         License existingLicense = licenseRepository.findById(id)
-                .orElseThrow(() -> ThrowableMessage(id));
+                .orElseThrow(() -> ThrowableMessage("",id));
         licenseRepository.deleteById(existingLicense.getId());
     }
 
 
-    private ResourceNotFoundException ThrowableMessage(Long id) {
-        return new ResourceNotFoundException("License with id " + id + " not found");
+    private ResourceNotFoundException ThrowableMessage(String owner, Long id) {
+        return new ResourceNotFoundException("License with " + owner + "id " + id + " not found");
     }
 }

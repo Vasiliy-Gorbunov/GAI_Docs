@@ -20,29 +20,33 @@ public class PassportJdbcRepository implements PassportRepository {
     @Override
     public List<Passport> findAll() {
         String sql = "SELECT * FROM passport";
-        return jdbcTemplate.query(sql, new PassportRowMapper());
+        List<Passport> passports = jdbcTemplate.query(sql, new PassportRowMapper());
+        passports.forEach(this::loadOwnersId); // загрузка ownersId для каждого паспорта
+        return passports;
     }
 
     @Override
     public Optional<Passport> findById(Long id) {
-        String sql = "SELECT id, car_id, owners_id, date FROM passport WHERE id = ?";
-
-        return Optional.ofNullable(jdbcTemplate.queryForObject(sql, new Object[]{id}, new PassportRowMapper()));
+        String sql = "SELECT * FROM passport WHERE id = ?";
+        Passport passport = jdbcTemplate.queryForObject(sql, new PassportRowMapper(), id);
+        if (passport != null) {
+            loadOwnersId(passport); // загрузка ownersId для паспорта
+        }
+        return Optional.ofNullable(passport);
     }
 
     @Override
     public Passport save(Passport passport) {
-        String sql = "INSERT INTO passport (car_id, owners_id, date) VALUES (?, ?, ?) RETURNING id";
-
-        // Вставка данных и получение сгенерированного id
-        Long generatedId = jdbcTemplate.queryForObject(sql, new Object[]{
-                passport.getCarId(),
-                passport.getOwnersId().toArray(), // Преобразуем список в массив
-                passport.getDate()
-        }, Long.class);
-
-        // Установка сгенерированного id в объект Passport
-        passport.setId(generatedId);
+        if (passport.getId() == null) {
+            // Используем RETURNING id для получения идентификатора новой записи
+            String sql = "INSERT INTO passport (car_id, date) VALUES (?, ?) RETURNING id";
+            Long generatedId = jdbcTemplate.queryForObject(sql, Long.class, passport.getCarId(), passport.getDate());
+            passport.setId(generatedId);
+        } else {
+            String sql = "UPDATE passport SET car_id = ?, date = ? WHERE id = ?";
+            jdbcTemplate.update(sql, passport.getCarId(), passport.getDate(), passport.getId());
+        }
+        saveOwnersId(passport); // сохранение ownersId для паспорта
         return passport;
     }
 
@@ -50,5 +54,30 @@ public class PassportJdbcRepository implements PassportRepository {
     public void deleteById(Long id) {
         String sql = "DELETE FROM passport WHERE id = ?";
         jdbcTemplate.update(sql, id);
+        deleteOwnersId(id); // удаление связей ownersId
+    }
+
+    // Вспомогательные методы для работы с ownersId
+
+    private void loadOwnersId(Passport passport) {
+        String sql = "SELECT owner_id FROM passport_owners_id WHERE passport_id = ?";
+        List<Long> ownersId = jdbcTemplate.query(sql,
+                (rs, rowNum) -> rs.getLong("owner_id"),
+                passport.getId()
+        );
+        passport.setOwnersId(ownersId);
+    }
+
+    private void saveOwnersId(Passport passport) {
+        deleteOwnersId(passport.getId()); // очистка старых ownersId
+        String sql = "INSERT INTO passport_owners_id (passport_id, owner_id) VALUES (?, ?)";
+        for (Long ownerId : passport.getOwnersId()) {
+            jdbcTemplate.update(sql, passport.getId(), ownerId);
+        }
+    }
+
+    private void deleteOwnersId(Long passportId) {
+        String sql = "DELETE FROM passport_owners_id WHERE passport_id = ?";
+        jdbcTemplate.update(sql, passportId);
     }
 }

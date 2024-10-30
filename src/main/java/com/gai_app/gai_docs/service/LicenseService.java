@@ -10,7 +10,6 @@ public interface LicenseService {
     LicenseModel createLicense(LicenseModel licenseModel);
     LicenseModel updateLicense(Long id, LicenseModel updatedLicense);
     void deleteLicense(Long id);
-
-
+    LicenseModel getLicenseByOwnerId(Long id);
 
 }
