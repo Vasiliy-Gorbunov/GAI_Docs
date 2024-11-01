@@ -5,6 +5,7 @@ import com.gai_app.gai_docs.exception.ResourceNotFoundException;
 import com.gai_app.gai_docs.mapper.MappingUtils;
 import com.gai_app.gai_docs.model.LicenseModel;
 import com.gai_app.gai_docs.repository.LicenseRepository;
+import jakarta.persistence.EntityExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +47,13 @@ public class LicenseServiceImpl implements LicenseService {
 
     @Transactional
     public LicenseModel createLicense(LicenseModel licenseModel) {
-        return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.save(mappingUtils.mapToLicense(licenseModel)));
+        if (licenseRepository.findByOwnerId(licenseModel.getOwnerId()).isEmpty()) {
+            throw new EntityExistsException("License with owner id: "
+                    + licenseModel.getOwnerId() + " already exists");
+        } else {
+            return mappingUtils.mapToLicenseModelFromEntity
+                    (licenseRepository.save(mappingUtils.mapToLicense(licenseModel)));
+        }
     }
 
 
@@ -55,6 +62,11 @@ public class LicenseServiceImpl implements LicenseService {
     public LicenseModel updateLicense(Long id, LicenseModel updatedLicense) {
         License existingLicense = licenseRepository.findById(id)
                 .orElseThrow(() -> ThrowableMessage("", id));
+
+        if (licenseRepository.findByOwnerId(updatedLicense.getOwnerId()).isEmpty()) {
+            throw new EntityExistsException("License with owner id: "
+                    + updatedLicense.getOwnerId() + " already exists");
+        }
 
         License updatingLicense = mappingUtils.mapToLicense(updatedLicense);
 

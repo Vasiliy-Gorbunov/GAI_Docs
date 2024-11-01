@@ -1,6 +1,5 @@
 package com.gai_app.gai_docs.controller.feign;
 
-import com.gai_app.gai_docs.DTO.OwnerDto;
 import com.gai_app.gai_docs.config.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;

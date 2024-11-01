@@ -1,6 +1,5 @@
 package com.gai_app.gai_docs.controller;
 import com.gai_app.gai_docs.DTO.LicenseDto;
-import com.gai_app.gai_docs.DTO.OwnerDto;
 import com.gai_app.gai_docs.controller.feign.OwnerClient;
 import com.gai_app.gai_docs.mapper.MappingUtils;
 import com.gai_app.gai_docs.model.LicenseModel;
@@ -52,14 +51,17 @@ public class LicenseControllerImpl implements LicenseController {
         return mappingUtils.mapToLicenseDto(licenseService.getLicenseByOwnerId(id));
     }
 
+    @GetMapping("/owner/license/{id}")
+    public Object getOwnerByLicenseId(@PathVariable Long id) {
+        LicenseDto license = getLicenseById(id);
+        return getOwnerById(license.getOwnerId()).getBody();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LicenseDto createLicense(@Valid @RequestBody LicenseDto licenseDto) {
-
         HttpStatusCode statusCode = getOwnerById(licenseDto.getOwnerId()).getStatusCode();
-        boolean status_4xx = statusCode.is4xxClientError();
-        logger.info("Status code in create license: {}", statusCode);
-        if (status_4xx) {
+        if (statusCode.is4xxClientError()) {
             throw new ResponseStatusException(statusCode);
         }
         LicenseModel licenseModel = mappingUtils.mapToLicenseModelFromDto(licenseDto);
@@ -70,6 +72,10 @@ public class LicenseControllerImpl implements LicenseController {
     produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public LicenseDto updateLicense(@PathVariable Long id, @Valid @RequestBody LicenseDto licenseDto) {
+        HttpStatusCode statusCode = getOwnerById(licenseDto.getOwnerId()).getStatusCode();
+        if (statusCode.is4xxClientError()) {
+            throw new ResponseStatusException(statusCode);
+        }
         LicenseModel updatedLicense = mappingUtils.mapToLicenseModelFromDto(licenseDto);
         return mappingUtils.mapToLicenseDto(licenseService.updateLicense(id, updatedLicense));
     }

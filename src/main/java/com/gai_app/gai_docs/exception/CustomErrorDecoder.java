@@ -11,7 +11,7 @@ public class CustomErrorDecoder implements ErrorDecoder {
     public Exception decode(String methodKey, Response response) {
         if (response.status() == HttpStatus.NOT_FOUND.value()) {
             // Вернуть исключение с детальным сообщением, если получен статус 404
-            return new ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found for the given ID");
+            throw new ResourceNotFoundException("Owner with this id not found");
         }
         // Для остальных ошибок используем стандартный Feign-обработчик
         return new Default().decode(methodKey, response);
