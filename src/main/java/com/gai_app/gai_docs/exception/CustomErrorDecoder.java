@@ -3,7 +3,6 @@ package com.gai_app.gai_docs.exception;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 public class CustomErrorDecoder implements ErrorDecoder {
 

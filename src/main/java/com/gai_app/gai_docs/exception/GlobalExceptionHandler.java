@@ -1,8 +1,12 @@
 package com.gai_app.gai_docs.exception;
 
+import feign.RetryableException;
 import jakarta.persistence.EntityExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -10,14 +14,18 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -31,6 +39,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleEntityExistsException(EntityExistsException ex) {
         String message = ex.getMessage();
         return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleInvalidEnumException(HttpMessageNotReadableException ex) {
+        String errorMessage = ex.getMessage();
+
+        // Проверяем, есть ли в сообщении ошибка, связанная с полем 'categories' и перечислением Category
+        if (errorMessage != null && errorMessage.contains("Category")) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid category value provided in 'categories'. Allowed values are: A, B, C, D, M, DE, CE, BE.");
+        }
+
+        // Общее сообщение для других ошибок десериализации
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body("Invalid request format. Please check your JSON structure and values.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -71,11 +96,21 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(message, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 
+//    Обработчик для недоступного сервиса (ошибки 503)
+    @ExceptionHandler(RetryableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ResponseEntity<String> handleRetryableException(RetryableException ex) {
+        String service = ex.getMessage().split(" ")[0];
+        String message = "Service " + service + " is unavailable. Please try again.";
+        return new ResponseEntity<>(message, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
     // Обработчик для непредвиденной ошибки сервера (ошибки 500)
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<String> handleGenericException(Exception ex) {
-        String message = "An unexpected error occurred: " + ex.toString()+ " Message: " + ex.getMessage();
+        logger.debug(ex.toString());
+        String message = "An unexpected error occurred: " + ex;
         return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
