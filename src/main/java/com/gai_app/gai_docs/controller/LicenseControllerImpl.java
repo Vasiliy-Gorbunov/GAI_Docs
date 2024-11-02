@@ -9,11 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -25,7 +23,6 @@ public class LicenseControllerImpl implements LicenseController {
     private final LicenseService licenseService;
     private final MappingUtils mappingUtils;
     private final OwnerClient ownerClient;
-    private static final Logger logger = LoggerFactory.getLogger(LicenseControllerImpl.class);
 
     @Autowired
     public LicenseControllerImpl(LicenseService licenseService, MappingUtils mappingUtils, OwnerClient ownerClient) {
@@ -60,10 +57,7 @@ public class LicenseControllerImpl implements LicenseController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LicenseDto createLicense(@Valid @RequestBody LicenseDto licenseDto) {
-        HttpStatusCode statusCode = getOwnerById(licenseDto.getOwnerId()).getStatusCode();
-        if (statusCode.is4xxClientError()) {
-            throw new ResponseStatusException(statusCode);
-        }
+        getOwnerById(licenseDto.getOwnerId());
         LicenseModel licenseModel = mappingUtils.mapToLicenseModelFromDto(licenseDto);
         return mappingUtils.mapToLicenseDto(licenseService.createLicense(licenseModel));
     }
@@ -72,10 +66,7 @@ public class LicenseControllerImpl implements LicenseController {
     produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public LicenseDto updateLicense(@PathVariable Long id, @Valid @RequestBody LicenseDto licenseDto) {
-        HttpStatusCode statusCode = getOwnerById(licenseDto.getOwnerId()).getStatusCode();
-        if (statusCode.is4xxClientError()) {
-            throw new ResponseStatusException(statusCode);
-        }
+        getOwnerById(licenseDto.getOwnerId());
         LicenseModel updatedLicense = mappingUtils.mapToLicenseModelFromDto(licenseDto);
         return mappingUtils.mapToLicenseDto(licenseService.updateLicense(id, updatedLicense));
     }
@@ -87,12 +78,7 @@ public class LicenseControllerImpl implements LicenseController {
     }
 
     private ResponseEntity<Object> getOwnerById(Long ownerId) {
-        logger.info("Get owner by id: {}", ownerId);
-        ResponseEntity<Object> ownerById = ownerClient.getOwnerById(ownerId);
-        logger.info("Received owner: {}", ownerById);
-        HttpStatusCode statusCode = ownerById.getStatusCode();
-        logger.info("Status code: {}", statusCode);
-        return new ResponseEntity<>(ownerById, statusCode);
+        return ownerClient.getOwnerById(ownerId);
     }
 
 }

@@ -1,6 +1,5 @@
 package com.gai_app.gai_docs.service;
 
-import com.gai_app.gai_docs.controller.LicenseControllerImpl;
 import com.gai_app.gai_docs.entity.License;
 import com.gai_app.gai_docs.exception.ResourceNotFoundException;
 import com.gai_app.gai_docs.mapper.MappingUtils;
@@ -21,7 +20,6 @@ public class LicenseServiceImpl implements LicenseService {
 
     private final LicenseRepository licenseRepository;
     private final MappingUtils mappingUtils;
-    private static final Logger logger = LoggerFactory.getLogger(LicenseServiceImpl.class);
 
     @Autowired
     public LicenseServiceImpl(LicenseRepository licenseRepository, MappingUtils mappingUtils) {
@@ -67,7 +65,8 @@ public class LicenseServiceImpl implements LicenseService {
         License existingLicense = licenseRepository.findById(id)
                 .orElseThrow(() -> ThrowableMessage("", id));
 
-        if (licenseRepository.findByOwnerId(updatedLicense.getOwnerId()).isPresent()) {
+        if (!updatedLicense.getOwnerId().equals(id) &&
+                licenseRepository.findByOwnerId(updatedLicense.getOwnerId()).isPresent()) {
             throw new EntityExistsException("License with owner id: "
                     + updatedLicense.getOwnerId() + " already exists");
         }

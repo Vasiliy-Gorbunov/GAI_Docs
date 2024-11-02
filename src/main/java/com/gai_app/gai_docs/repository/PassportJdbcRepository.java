@@ -17,7 +17,7 @@ public class PassportJdbcRepository implements PassportRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    @Override
+
     public List<Passport> findAll() {
         String sql = "SELECT * FROM passport";
         List<Passport> passports = jdbcTemplate.query(sql, new PassportRowMapper());
@@ -25,7 +25,16 @@ public class PassportJdbcRepository implements PassportRepository {
         return passports;
     }
 
-    @Override
+    public List<Passport> findAllByOwnersIdContains(Long id) {
+        String sql = "SELECT * FROM passport " +
+                "JOIN passport_owners_id ON passport.id = passport_owners_id.passport_id " +
+                "WHERE passport_owners_id.owner_id = ?";
+        List<Passport> passports = jdbcTemplate.query(sql, new PassportRowMapper());
+        passports.forEach(this::loadOwnersId); // загрузка ownersId для каждого паспорта
+        return passports;
+    }
+
+
     public Optional<Passport> findById(Long id) {
         String sql = "SELECT * FROM passport WHERE id = ?";
         Passport passport = jdbcTemplate.queryForObject(sql, new PassportRowMapper(), id);
@@ -35,7 +44,16 @@ public class PassportJdbcRepository implements PassportRepository {
         return Optional.ofNullable(passport);
     }
 
-    @Override
+    public Optional<Passport> findByCarId(Long carId) {
+        String sql = "SELECT * FROM passport WHERE car_id = ?";
+        Passport passport = jdbcTemplate.queryForObject(sql, new PassportRowMapper(), carId);
+        if (passport != null) {
+            loadOwnersId(passport); // загрузка ownersId для паспорта
+        }
+        return Optional.ofNullable(passport);
+    }
+
+
     public Passport save(Passport passport) {
         if (passport.getId() == null) {
             // Используем RETURNING id для получения идентификатора новой записи
@@ -50,7 +68,7 @@ public class PassportJdbcRepository implements PassportRepository {
         return passport;
     }
 
-    @Override
+
     public void deleteById(Long id) {
         String sql = "DELETE FROM passport WHERE id = ?";
         jdbcTemplate.update(sql, id);
