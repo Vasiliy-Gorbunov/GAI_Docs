@@ -5,6 +5,7 @@ import com.gai_app.gai_docs.exception.ResourceNotFoundException;
 import com.gai_app.gai_docs.mapper.MappingUtils;
 import com.gai_app.gai_docs.model.PassportModel;
 import com.gai_app.gai_docs.repository.PassportRepository;
+import com.gai_app.gai_docs.service.kafka.NotificationService;
 import jakarta.persistence.EntityExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,11 +19,13 @@ public class PassportServiceImpl implements PassportService {
 
     private final PassportRepository passportRepository;
     private final MappingUtils mappingUtils;
+    private final NotificationService notificationService;
 
     @Autowired
-    public PassportServiceImpl(PassportRepository passportRepository, MappingUtils mappingUtils) {
+    public PassportServiceImpl(PassportRepository passportRepository, MappingUtils mappingUtils, NotificationService notificationService) {
         this.passportRepository = passportRepository;
         this.mappingUtils = mappingUtils;
+        this.notificationService = notificationService;
     }
 
 
@@ -61,8 +64,10 @@ public class PassportServiceImpl implements PassportService {
             throw new EntityExistsException("Passport with car id: "
                     + passportModel.getCarId() + " already exists");
         }
-        return mappingUtils.mapToPassportModelFromEntity(passportRepository
+        PassportModel savedPassport = mappingUtils.mapToPassportModelFromEntity(passportRepository
                 .save(mappingUtils.mapToPassport(passportModel)));
+        notificationService.getPassportModelCreateMessageAndSend(savedPassport, "created");
+        return savedPassport;
     }
 
 
@@ -81,7 +86,10 @@ public class PassportServiceImpl implements PassportService {
         existingPassport.setCarId(updatingPassport.getCarId());
         existingPassport.setOwnersId(updatingPassport.getOwnersId());
 
-        return mappingUtils.mapToPassportModelFromEntity(passportRepository.save(existingPassport));
+        PassportModel passportModel = mappingUtils.mapToPassportModelFromEntity(passportRepository
+                .save(existingPassport));
+        notificationService.getPassportModelCreateMessageAndSend(passportModel, "updated");
+        return passportModel;
     }
 
 
@@ -90,6 +98,8 @@ public class PassportServiceImpl implements PassportService {
         Passport existingPassport = passportRepository.findById(id)
                 .orElseThrow(() -> ThrowableMessage(id));
         passportRepository.deleteById(existingPassport.getId());
+        notificationService.getPassportModelCreateMessageAndSend(mappingUtils
+                .mapToPassportModelFromEntity(existingPassport), "deleted");
     }
 
 

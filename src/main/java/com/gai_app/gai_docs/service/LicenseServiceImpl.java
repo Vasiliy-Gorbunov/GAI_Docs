@@ -5,9 +5,8 @@ import com.gai_app.gai_docs.exception.ResourceNotFoundException;
 import com.gai_app.gai_docs.mapper.MappingUtils;
 import com.gai_app.gai_docs.model.LicenseModel;
 import com.gai_app.gai_docs.repository.LicenseRepository;
+import com.gai_app.gai_docs.service.kafka.NotificationService;
 import jakarta.persistence.EntityExistsException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,11 +19,13 @@ public class LicenseServiceImpl implements LicenseService {
 
     private final LicenseRepository licenseRepository;
     private final MappingUtils mappingUtils;
+    private final NotificationService notificationService;
 
     @Autowired
-    public LicenseServiceImpl(LicenseRepository licenseRepository, MappingUtils mappingUtils) {
+    public LicenseServiceImpl(LicenseRepository licenseRepository, MappingUtils mappingUtils, NotificationService notificationService) {
         this.licenseRepository = licenseRepository;
         this.mappingUtils = mappingUtils;
+        this.notificationService = notificationService;
     }
 
 
@@ -53,8 +54,11 @@ public class LicenseServiceImpl implements LicenseService {
             throw new EntityExistsException("License with owner id: "
                     + licenseModel.getOwnerId() + " already exists");
         } else {
-            return mappingUtils.mapToLicenseModelFromEntity
-                    (licenseRepository.save(mappingUtils.mapToLicense(licenseModel)));
+
+            LicenseModel savedLicense = mappingUtils.mapToLicenseModelFromEntity(licenseRepository
+                    .save(mappingUtils.mapToLicense(licenseModel)));
+            notificationService.getLicenseModelCreateMessageAndSend(savedLicense, "created");
+            return savedLicense;
         }
     }
 
@@ -77,7 +81,10 @@ public class LicenseServiceImpl implements LicenseService {
         existingLicense.setOwnerId(updatingLicense.getOwnerId());
         existingLicense.setCategories(updatingLicense.getCategories());
 
-        return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.save(existingLicense));
+        LicenseModel license = mappingUtils.mapToLicenseModelFromEntity(licenseRepository
+                .save(existingLicense));
+        notificationService.getLicenseModelCreateMessageAndSend(license, "updated");
+        return license;
     }
 
 
@@ -86,6 +93,8 @@ public class LicenseServiceImpl implements LicenseService {
         License existingLicense = licenseRepository.findById(id)
                 .orElseThrow(() -> ThrowableMessage("",id));
         licenseRepository.deleteById(existingLicense.getId());
+        notificationService.getLicenseModelCreateMessageAndSend(mappingUtils
+                .mapToLicenseModelFromEntity(existingLicense), "deleted");
     }
 
 
