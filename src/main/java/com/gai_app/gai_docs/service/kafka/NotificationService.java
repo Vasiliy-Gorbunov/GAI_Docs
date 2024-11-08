@@ -15,14 +15,14 @@ public class NotificationService {
     }
 
     public void getLicenseModelCreateMessageAndSend(LicenseModel model, String cause) {
-        String message = "License with id owner " + model.getOwnerId() + " has been " + cause + "\n"
-                + "License: " + model;
+        String message = "License with owner id " + model.getOwnerId() + " has been "
+                + cause + ". License: " + model;
         sendNotification(message);
     }
 
     public void getPassportModelCreateMessageAndSend(PassportModel model, String cause) {
-        String message = "Passport with id owners " + model.getOwnersId() + " has been " + cause + "\n"
-                + "Passport: " + model;
+        String message = "Passport with owners id " + model.getOwnersId() + " has been "
+                + cause + ". Passport: " + model;
         sendNotification(message);
     }
 

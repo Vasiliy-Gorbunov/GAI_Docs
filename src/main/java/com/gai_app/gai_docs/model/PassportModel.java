@@ -1,15 +1,13 @@
 package com.gai_app.gai_docs.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Component
-@Getter
-@Setter
+@Data
 public class PassportModel {
 
     private Long id;
