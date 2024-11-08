@@ -1,5 +1,11 @@
-FROM openjdk:21-jdk-slim
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
-COPY /target/GAI_Docs-0.0.1-SNAPSHOT.jar /app/GAI_Docs.jar
+COPY . /app
+
+RUN mvn package -DskipTests
+
+FROM  eclipse-temurin:21-jre-alpine
+COPY --from=builder /app/target/GAI_Docs*.jar /GAI_Docs.jar
+
 EXPOSE 8083
-ENTRYPOINT ["java", "-jar", "GAI_Docs.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport","-XX:MaxRAMPercentage=70.0", "-XX:+UseParallelGC", "-jar", "GAI_Docs.jar"]
