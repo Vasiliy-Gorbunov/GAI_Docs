@@ -11,11 +11,10 @@ import java.util.List;
 @Getter
 @Setter
 public class License {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-//    private String uid;
 
     private LocalDate date;
 

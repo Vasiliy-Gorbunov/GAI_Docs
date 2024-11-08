@@ -19,4 +19,8 @@ public interface LicenseController {
 
 
     void deleteLicense(Long id);
+
+    LicenseDto getLicenseByOwnerId(Long id);
+
+    Object getOwnerByLicenseId(Long id);
 }

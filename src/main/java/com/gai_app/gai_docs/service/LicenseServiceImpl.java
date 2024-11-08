@@ -5,6 +5,8 @@ import com.gai_app.gai_docs.exception.ResourceNotFoundException;
 import com.gai_app.gai_docs.mapper.MappingUtils;
 import com.gai_app.gai_docs.model.LicenseModel;
 import com.gai_app.gai_docs.repository.LicenseRepository;
+import com.gai_app.gai_docs.service.kafka.NotificationService;
+import jakarta.persistence.EntityExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,40 +19,61 @@ public class LicenseServiceImpl implements LicenseService {
 
     private final LicenseRepository licenseRepository;
     private final MappingUtils mappingUtils;
+    private final NotificationService notificationService;
 
     @Autowired
-    public LicenseServiceImpl(LicenseRepository licenseRepository, MappingUtils mappingUtils) {
+    public LicenseServiceImpl(LicenseRepository licenseRepository, MappingUtils mappingUtils, NotificationService notificationService) {
         this.licenseRepository = licenseRepository;
         this.mappingUtils = mappingUtils;
+        this.notificationService = notificationService;
     }
 
-    @Override
+
     @Transactional(readOnly = true)
     public List<LicenseModel> getAllLicenses() {
         return licenseRepository.findAll().stream().map(mappingUtils::mapToLicenseModelFromEntity).collect(Collectors.toList());
     }
 
 
-    @Override
+
     @Transactional(readOnly = true)
     public LicenseModel getLicenseById(Long id) {
         return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.findById(id)
-                .orElseThrow(() -> ThrowableMessage(id)));
+                .orElseThrow(() -> ThrowableMessage("", id)));
     }
 
-
     @Override
+    public LicenseModel getLicenseByOwnerId(Long id) {
+        return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.findByOwnerId(id)
+                .orElseThrow(() -> ThrowableMessage("owner ", id)));
+    }
+
     @Transactional
     public LicenseModel createLicense(LicenseModel licenseModel) {
-        return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.save(mappingUtils.mapToLicense(licenseModel)));
+        if (licenseRepository.findByOwnerId(licenseModel.getOwnerId()).isPresent()) {
+            throw new EntityExistsException("License with owner id: "
+                    + licenseModel.getOwnerId() + " already exists");
+        } else {
+
+            LicenseModel savedLicense = mappingUtils.mapToLicenseModelFromEntity(licenseRepository
+                    .save(mappingUtils.mapToLicense(licenseModel)));
+            notificationService.getLicenseModelCreateMessageAndSend(savedLicense, "created");
+            return savedLicense;
+        }
     }
 
 
-    @Override
+
     @Transactional
     public LicenseModel updateLicense(Long id, LicenseModel updatedLicense) {
         License existingLicense = licenseRepository.findById(id)
-                .orElseThrow(() -> ThrowableMessage(id));
+                .orElseThrow(() -> ThrowableMessage("", id));
+
+        if (!updatedLicense.getOwnerId().equals(id) &&
+                licenseRepository.findByOwnerId(updatedLicense.getOwnerId()).isPresent()) {
+            throw new EntityExistsException("License with owner id: "
+                    + updatedLicense.getOwnerId() + " already exists");
+        }
 
         License updatingLicense = mappingUtils.mapToLicense(updatedLicense);
 
@@ -58,20 +81,24 @@ public class LicenseServiceImpl implements LicenseService {
         existingLicense.setOwnerId(updatingLicense.getOwnerId());
         existingLicense.setCategories(updatingLicense.getCategories());
 
-        return mappingUtils.mapToLicenseModelFromEntity(licenseRepository.save(existingLicense));
+        LicenseModel license = mappingUtils.mapToLicenseModelFromEntity(licenseRepository
+                .save(existingLicense));
+        notificationService.getLicenseModelCreateMessageAndSend(license, "updated");
+        return license;
     }
 
 
-    @Override
     @Transactional
     public void deleteLicense(Long id) {
         License existingLicense = licenseRepository.findById(id)
-                .orElseThrow(() -> ThrowableMessage(id));
+                .orElseThrow(() -> ThrowableMessage("",id));
         licenseRepository.deleteById(existingLicense.getId());
+        notificationService.getLicenseModelCreateMessageAndSend(mappingUtils
+                .mapToLicenseModelFromEntity(existingLicense), "deleted");
     }
 
 
-    private ResourceNotFoundException ThrowableMessage(Long id) {
-        return new ResourceNotFoundException("License with id " + id + " not found");
+    private ResourceNotFoundException ThrowableMessage(String owner, Long id) {
+        return new ResourceNotFoundException("License with " + owner + "id " + id + " not found");
     }
 }

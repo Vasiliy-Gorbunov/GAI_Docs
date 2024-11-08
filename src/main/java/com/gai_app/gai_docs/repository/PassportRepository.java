@@ -9,7 +9,11 @@ public interface PassportRepository {
 
     List<Passport> findAll();
 
+    List<Passport> findAllByOwnersIdContains(Long id);
+
     Optional<Passport> findById(Long id);
+
+    Optional<Passport> findByCarId(Long carId);
 
     Passport save(Passport Passport);
 
